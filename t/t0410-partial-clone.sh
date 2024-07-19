@@ -22,6 +22,17 @@ pack_as_from_promisor () {
 	echo $HASH
 }
 
+pack_commit() {
+	HASH=$(echo $1 | git -C repo pack-objects .git/objects/pack/pack --missing=allow-any) &&
+	delete_object repo $1 &&
+	echo $HASH
+}
+
+pack_commit_as_promisor() {
+	HASH=$(pack_commit $1) &&
+	>repo/.git/objects/pack/pack-$HASH.promisor
+}
+
 promise_and_delete () {
 	HASH=$(git -C repo rev-parse "$1") &&
 	git -C repo tag -a -m message my_annotated_tag "$HASH" &&
@@ -369,9 +380,18 @@ test_expect_success 'missing tree objects with --missing=allow-promisor and --ex
 	git -C repo rev-list --exclude-promisor-objects --objects HEAD >objs 2>rev_list_err &&
 	test_must_be_empty rev_list_err &&
 	# 3 commits, no blobs or trees
-	test_line_count = 3 objs
-'
+	test_line_count = 3 objs &&
 
+	# Pack all three commits into individual packs, and mark the last commit pack as promisor
+	pack_commit_as_promisor $(git -C repo rev-parse baz) &&
+	pack_commit $(git -C repo rev-parse bar) &&
+	pack_commit $(git -C repo rev-parse foo) &&
+	git -C repo rev-list --exclude-promisor-objects --objects HEAD >objs 2>rev_list_err &&
+	test_must_be_empty rev_list_err &&
+	# commits foo and bar should remain
+	test_line_count = 2 objs
+'
+exit 1
 test_expect_success 'missing non-root tree object and rev-list' '
 	rm -rf repo &&
 	test_create_repo repo &&

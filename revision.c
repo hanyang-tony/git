@@ -1164,7 +1164,7 @@ static int process_parents(struct rev_info *revs, struct commit *commit,
 	 * wasn't uninteresting), in which case we need
 	 * to mark its parents recursively too..
 	 */
-	if (commit->object.flags & UNINTERESTING) {
+	if (!revs->exclude_promisor_objects && commit->object.flags & UNINTERESTING) {
 		while (parent) {
 			struct commit *p = parent->item;
 			parent = parent->next;

@@ -168,18 +168,18 @@ static void process_tree(struct traversal_context *ctx,
 	if (ctx->depth > max_allowed_tree_depth)
 		die("exceeded maximum allowed tree depth");
 
+	/*
+	 * Pre-filter known-missing tree objects when explicitly
+	 * requested.  This may cause the actual filter to report
+	 * an incomplete list of missing objects.
+	 */
+	if (revs->exclude_promisor_objects &&
+		is_promisor_object(&obj->oid))
+		return;
+
 	failed_parse = parse_tree_gently(tree, 1);
 	if (failed_parse) {
 		if (revs->ignore_missing_links)
-			return;
-
-		/*
-		 * Pre-filter known-missing tree objects when explicitly
-		 * requested.  This may cause the actual filter to report
-		 * an incomplete list of missing objects.
-		 */
-		if (revs->exclude_promisor_objects &&
-		    is_promisor_object(&obj->oid))
 			return;
 
 		if (!revs->do_not_die_on_missing_objects)
@@ -383,6 +383,10 @@ static void do_traverse(struct traversal_context *ctx)
 
 	while ((commit = get_revision(ctx->revs)) != NULL) {
 		enum list_objects_filter_result r;
+		
+		if (ctx->revs->exclude_promisor_objects &&
+			is_in_promisor_pack(&commit->object.oid, 0))
+			continue;
 
 		r = list_objects_filter__filter_object(ctx->revs->repo,
 				LOFS_COMMIT, &commit->object,

@@ -443,7 +443,8 @@ test_expect_success 'rev-list stops traversal at promisor commit, tree, and blob
 	COMMIT=$(git -C repo rev-parse foo) &&
 	TREE=$(git -C repo rev-parse bar^{tree}) &&
 	BLOB=$(git hash-object repo/baz.t) &&
-	printf "%s\n%s\n%s\n" $COMMIT $TREE $BLOB | pack_as_from_promisor &&
+	printf "%s\n%s\n" $COMMIT $TREE | pack_as_from_promisor &&
+	promise_and_delete $BLOB &&
 
 	git -C repo config core.repositoryformatversion 1 &&
 	git -C repo config extensions.partialclone "arbitrary string" &&

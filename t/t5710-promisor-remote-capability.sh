@@ -32,17 +32,26 @@ check_missing_objects () {
 }
 
 initialize_server () {
-	# Repack everything first
-	git -C server -c repack.writebitmaps=false repack -a -d &&
+	git -C server remote remove server2
+	has_promisor_remote=$?
 
 	# Remove promisor file in case they exist, useful when reinitializing
 	rm -rf server/objects/pack/*.promisor &&
+
+	# Repack everything first
+	git -C server -c repack.writebitmaps=false repack -a -d &&
 
 	# Repack without the largest object and create a promisor pack on server
 	git -C server -c repack.writebitmaps=false repack -a -d \
 	    --filter=blob:limit=5k --filter-to="$(pwd)" &&
 	promisor_file=$(ls server/objects/pack/*.pack | sed "s/\.pack/.promisor/") &&
-	touch "$promisor_file" &&
+	touch "$promisor_file"
+
+	# Configure server2 as promisor remote for server
+	if [[ $has_promisor_remote -eq 0 ]]; then
+	    	git -C server remote add server2 "file://$(pwd)/server2" &&
+	    	git -C server config remote.server2.promisor true
+	fi
 
 	# Check that only one object is missing on the server
 	check_missing_objects server 1 "$oid"

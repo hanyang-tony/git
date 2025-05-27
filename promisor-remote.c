@@ -275,7 +275,6 @@ void promisor_remote_get_direct(struct repository *repo,
 	struct object_id *remaining_oids = (struct object_id *)oids;
 	int remaining_nr = oid_nr;
 	int to_free = 0;
-	int i;
 
 	if (oid_nr == 0)
 		return;
@@ -296,10 +295,9 @@ void promisor_remote_get_direct(struct repository *repo,
 		goto all_fetched;
 	}
 
-	for (i = 0; i < remaining_nr; i++) {
-		if (is_promisor_object(repo, &remaining_oids[i]))
-			die(_("could not fetch %s from promisor remote"),
-			    oid_to_hex(&remaining_oids[i]));
+	if (remaining_nr) {
+		die(_("could not fetch %s from promisor remote"),
+			oid_to_hex(&remaining_oids[0]));
 	}
 
 all_fetched:
